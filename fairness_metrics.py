@@ -17,6 +17,34 @@ def probability_to_outcome(X, Y_hat, protected_attribute_index, thresholds):
     return outcomes
 
 
+def distance(pointA, pointB, _norm=np.linalg.norm):
+    return _norm(pointA - pointB)
+
+
+def get_individual_fairness(X, Y_hat, protected_attribute_index, thresholds):
+    min = 10000000
+    for i in range(len(Y_hat)):
+        protected_attribute = int(X[i, protected_attribute_index])
+        if (Y_hat[i] > thresholds[protected_attribute]):
+            y_hat_i = 1
+        else:
+            y_hat_i = 0
+        for j in range(len(Y_hat)):
+
+            protected_attribute = int(X[j, protected_attribute_index])
+            if (Y_hat[j] > thresholds[protected_attribute]):
+                y_hat_j = 1
+            else:
+                y_hat_j = 0
+
+            if (y_hat_i != y_hat_j):
+                dist = distance(X[i, :], X[j, :])
+                if (dist < min):
+                    min = dist
+    # print("fin")
+    return min
+
+
 def get_inaccuracy(X, Y_hat, Y, protected_attribute_index, thresholds):
     wrong = 0
     count = len(Y_hat)

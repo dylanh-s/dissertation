@@ -89,13 +89,13 @@ def get_train_and_test_data():
     Z = Z[:, 1:]
     np.random.shuffle(Z)
     (rows, cols) = Z.shape
-    print(Z.shape)
+    # print(Z.shape)
     train_rows = round(0.7*rows)
     # decrement value of credit rating
     Z_train = Z[:train_rows, :]
-    print(Z_train.shape)
+    # print(Z_train.shape)
     Z_test = Z[train_rows:, :]
-    print(Z_test.shape)
+    # print(Z_test.shape)
     return Z_train, Z_test
 
 

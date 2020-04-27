@@ -25,7 +25,8 @@ class Metrics(enum.Enum):
     dTPR = 0
     dFPR = 1
     SP = 2
-    INAC = 3
+    LIPS = 3
+    INAC = 4
 
 
 thin = True
@@ -222,6 +223,9 @@ for ts in thresholds:
         Z_test, np.asarray(predictions), Y_test, PROTECTED_COL, ts)
     currents[Metrics.INAC.value] = fairness_metrics.get_inaccuracy(
         Z_test, np.asarray(predictions), Y_test, PROTECTED_COL, ts)
+
+    currents[Metrics.LIPS.value] = fairness_metrics.get_individual_fairness(
+        X_test, np.asarray(predictions), PROTECTED_COL, ts)
 
     for met in Metrics:
         zs[met.value].append(currents[met.value])
