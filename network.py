@@ -46,7 +46,7 @@ class Classifier(nn.Module):
 
     # predicts the class (0 == low recid or 1 == high recid)
     def predict(self, x):
-        # Apply softmax to output.
+        # Apply sigmoid to output.
         pred = torch.sigmoid(self.forward(x))
         # print(pred)
         return pred

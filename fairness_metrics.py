@@ -1,7 +1,9 @@
 import numpy as np
 
-FAVOURED = 1
-UNFAVOURED = 0
+# 1 == male, white
+FAVOURED = 0
+# 0 == female, non_white
+UNFAVOURED = 1
 
 
 def probability_to_outcome(X, Y_hat, protected_attribute_index, thresholds):
@@ -19,6 +21,69 @@ def probability_to_outcome(X, Y_hat, protected_attribute_index, thresholds):
 
 def distance(pointA, pointB, _norm=np.linalg.norm):
     return _norm(pointA - pointB)
+
+
+def speedy_metrics(X, Y_hat, Y, protected_attribute_index, thresholds):
+    # calculate SP, dTPR, dFPR, pSUFF, nSUFF in one loop through Y
+    counts = np.zeros(2)
+
+    positive_preds = np.zeros(2)
+
+    negative_preds = np.zeros(2)
+
+    true_positives = np.zeros(2)
+
+    true_negatives = np.zeros(2)
+
+    false_positives = np.zeros(2)
+
+    false_negatives = np.zeros(2)
+
+    for i in range(len(Y_hat)):
+        protected_attribute = int(X[i, protected_attribute_index])
+        if (Y_hat[i] > thresholds[protected_attribute]):
+            y_hat = 1
+        else:
+            y_hat = 0
+        counts[protected_attribute] += 1
+
+        if (Y[i] == 1 and y_hat == 1):
+            true_positives[protected_attribute] += 1
+        if (Y[i] == 0 and y_hat == 0):
+            true_negatives[protected_attribute] += 1
+
+        if (Y[i] == 0 and y_hat == 1):
+            false_positives[protected_attribute] += 1
+        if ((Y[i] == 1 and y_hat == 0)):
+            false_negatives[protected_attribute] += 1
+
+        if (y_hat == 1):
+            positive_preds[protected_attribute] += 1
+
+    negative_preds = counts-positive_preds
+
+    # SP
+    P = positive_preds/(counts)
+    SP = abs(P[0]-P[1])
+    # SP = 1-(min(P[0], P[1])/(max(P[0], P[1])))
+
+    # dTPR
+    TPR = true_positives / (true_positives+false_negatives)
+    dTPR = abs(TPR[0]-TPR[1])
+
+    # dFPR
+    FPR = false_positives / (true_negatives+false_positives)
+    dFPR = abs(FPR[0]-FPR[1])
+
+    # pSUFF
+    P = true_positives/(positive_preds+1)
+    pSUFF = abs(P[0]-P[1])
+
+    # nSUFF
+    P = true_negatives/(negative_preds+1)
+    nSUFF = abs(P[0]-P[1])
+
+    return SP, dTPR, dFPR, pSUFF, nSUFF
 
 
 def get_individual_fairness(X, Y_hat, protected_attribute_index, thresholds):
@@ -152,39 +217,105 @@ def get_equalised_odds(X, Y_hat, Y, protected_attribute_index, thresholds):
     dTPR = CM_DIFF[1, 1]
     dFPR = CM_DIFF[0, 1]
 
-    # dTPR = CM_DIFF[0, 0]
-    # dFPR = CM_DIFF[1, 0]
-
-    # print("dTPR = " + str(dTPR))
-    # print("dFPR = " + str(dFPR))
     return abs(dTPR), abs(dFPR)
+    # return abs(dTPR), abs(dFPR)
 
 
 def get_statistical_parity(X, Y_hat, Y, protected_attribute_index, thresholds):
-    confusion_matrices = [np.zeros((2, 2)), np.zeros((2, 2))]
 
-    pos_outcomes = np.zeros(2)
+    # difference between probability Y=1 given Yhat = 1 for white and black
+    count_favoured = 0
+    favoured_positive_preds = 0
 
-    counts = np.zeros(2)
-    # positive -> predicted to recid
-    # true -> correct prediction
-    # Different actors want different minimisations
-
+    count_unfavoured = 0
+    unfavoured_positive_preds = 0
     for i in range(len(Y_hat)):
-        # prediction 1 = recid, 0 = no recid
         protected_attribute = int(X[i, protected_attribute_index])
         if (Y_hat[i] > thresholds[protected_attribute]):
             y_hat = 1
         else:
             y_hat = 0
-        pos_outcomes[protected_attribute] += y_hat
 
-        counts[protected_attribute] += 1
-    P_favoured_outcome_unfavoured = ((counts[UNFAVOURED]-pos_outcomes[UNFAVOURED])/counts[UNFAVOURED])
-    P_favoured_outcome_favoured = ((counts[FAVOURED]-pos_outcomes[FAVOURED])/counts[FAVOURED])
-    epsilon = (P_favoured_outcome_unfavoured/P_favoured_outcome_favoured)
-    # print("p(Y_hat|unfavoured) "+str(P_favoured_outcome_unfavoured))
-    # print("p(Y_hat|favoured) "+str(P_favoured_outcome_favoured))
-    # print(str(abs(epsilon*100))+" percent fair")
+        if (protected_attribute == FAVOURED):
+            count_favoured += 1
+            if (y_hat == 1):
+                favoured_positive_preds += 1
 
-    return abs(1-epsilon)
+        if (protected_attribute == UNFAVOURED):
+            count_unfavoured += 1
+            if (y_hat == 1):
+                unfavoured_positive_preds += 1
+
+    P0 = favoured_positive_preds/(count_favoured+1)
+    P1 = unfavoured_positive_preds/(count_unfavoured+1)
+    SP = 1-(min(P0, P1)/(max(P0, P1)))
+
+    return SP
+
+
+def positive_sufficiency(X, Y_hat, Y, protected_attribute_index, thresholds):
+    # difference between probability Y=1 given Yhat = 1 for white and black
+    favoured_true_positives = 0
+    favoured_positive_preds = 0
+
+    unfavoured_true_positives = 0
+    unfavoured_positive_preds = 0
+    for i in range(len(Y_hat)):
+        protected_attribute = int(X[i, protected_attribute_index])
+        if (Y_hat[i] > thresholds[protected_attribute]):
+            y_hat = 1
+        else:
+            y_hat = 0
+
+        if (protected_attribute == FAVOURED):
+            if (Y[i] == 1 and y_hat == 1):
+                favoured_true_positives += 1
+            if (y_hat == 1):
+                favoured_positive_preds += 1
+
+        if (protected_attribute == UNFAVOURED):
+            if (Y[i] == 1 and y_hat == 1):
+                unfavoured_true_positives += 1
+            if (y_hat == 1):
+                unfavoured_positive_preds += 1
+
+    P0 = favoured_true_positives/(favoured_positive_preds+1)
+    P1 = unfavoured_true_positives/(unfavoured_positive_preds+1)
+    return abs(P0-P1)
+
+
+def negative_sufficiency(X, Y_hat, Y, protected_attribute_index, thresholds):
+    # difference between probability Y=0 given Y_hat = 0 for white and black
+    favoured_true_negatives = 0
+    favoured_negative_preds = 0
+    unfavoured_true_negatives = 0
+    unfavoured_negative_preds = 0
+    for i in range(len(Y_hat)):
+        protected_attribute = int(X[i, protected_attribute_index])
+        if (Y_hat[i] > thresholds[protected_attribute]):
+            y_hat = 1
+        else:
+            y_hat = 0
+
+        if (protected_attribute == FAVOURED):
+            if (Y[i] == 0 and y_hat == 0):
+                favoured_true_negatives += 1
+            if (y_hat == 0):
+                favoured_negative_preds += 1
+
+        if (protected_attribute == UNFAVOURED):
+            if (Y[i] == 0 and y_hat == 0):
+                unfavoured_true_negatives += 1
+            if (y_hat == 0):
+                unfavoured_negative_preds += 1
+
+    P0 = favoured_true_negatives/(favoured_negative_preds+1)
+    P1 = unfavoured_true_negatives/(unfavoured_negative_preds+1)
+    return abs(P0-P1)
+
+
+def sufficiency(X, Y_hat, Y, protected_attribute_index, thresholds):
+    pos_suff = positive_sufficiency(X, Y_hat, Y, protected_attribute_index, thresholds)
+    neg_suff = negative_sufficiency(X, Y_hat, Y, protected_attribute_index, thresholds)
+
+    return pos_suff, neg_suff
