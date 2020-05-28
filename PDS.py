@@ -220,7 +220,7 @@ elif (dataset == 'compas'):
     # predictions = np.ones(Y.shape)*BASE
     # predictions = Y
 else:
-    sys.exit("No dataset found for "+sys.argv[1])
+    sys.exit("No dataset found for "+dataset)
 graphing.set_dataset(dataset)
 pprint(Z.shape)
 BASE = get_base_rate(Z, Y)
