@@ -45,11 +45,11 @@ def prediction_hist(Z, protected_index, predictions, ts=False):
     cols = ['blue', 'orange']
     plt.hist(np.asarray(predictions_0), bins=20, range=(0, 1), alpha=0.7, label='non_white_predictions', color=cols[0])
     plt.hist(np.asarray(predictions_1), bins=20, range=(0, 1), alpha=0.7, label='white_predictions', color=cols[1])
-    # if (not ts == False):
-    # plt.axvline(x=ts[0], linestyle='--', c=cols[0], label='G_0 threshold')
-    # plt.axvline(x=ts[1], linestyle='--', c=cols[1], label='G_1 threshold')
+    if (not ts == False):
+        plt.axvline(x=ts[0], linestyle='--', c=cols[0], label='G_0 threshold')
+        plt.axvline(x=ts[1], linestyle='--', c=cols[1], label='G_1 threshold')
     plt.legend()
-    plt.savefig('figs/'+dataset+'/'+dataset+'_NN_predictions_hist.png')
+    plt.savefig('figs/'+dataset+'/'+dataset+'_NN_predictions_hist.pdf')
     plt.close()
 
 
@@ -62,11 +62,11 @@ def ungrouped_prediction_hist(Z, protected_index, predictions, s, ts=False):
     ax.set_ylabel('quantity')
     cols = ['blue', 'orange']
     plt.hist(np.asarray(predictions), bins=20, range=(0, 1), alpha=1.0, label='predictions', color=cols[0])
-    # if (not ts == False):
-    # plt.axvline(x=ts[0], linestyle='--', c=cols[0], label='G_0 threshold')
-    # plt.axvline(x=ts[1], linestyle='--', c=cols[1], label='G_1 threshold')
+    if (not ts == False):
+        plt.axvline(x=ts[0], linestyle='--', c=cols[0], label='G_0 threshold')
+        plt.axvline(x=ts[1], linestyle='--', c=cols[1], label='G_1 threshold')
     plt.legend()
-    plt.savefig('figs/'+dataset+'/'+dataset+'_ungrouped_NN_predictions_hist.png')
+    plt.savefig('figs/'+dataset+'/'+dataset+'_ungrouped_NN_predictions_hist.pdf')
     plt.close()
 
 
@@ -86,7 +86,7 @@ def outcome_hists(Z, Y, Y_hat_fair, Y_hat_probabilistic, protected_index, s):
         probabilistic_predicted_positives[protected_attribute] += Y_hat_probabilistic[i]
 
     fig, ax = plt.subplots()
-    ax.set_ylim([0, len(Y)])
+    ax.set_ylim([0, 2000])
     cols = ['blue', 'orange']
 
     p1 = ax.bar(
@@ -94,19 +94,19 @@ def outcome_hists(Z, Y, Y_hat_fair, Y_hat_probabilistic, protected_index, s):
             fair_predicted_positives[0],
             probabilistic_predicted_positives[0]],
         width, color=cols[0],
-        label='unfavoured')
+        label='African-American')
     p2 = ax.bar(
         x + width, [ground_truth_positives[1],
                     fair_predicted_positives[1],
                     probabilistic_predicted_positives[1]],
         width, color=cols[1],
-        label='favoured')
+        label='White')
     ax.set_title(dataset+' ground truths vs predictions')
     ax.set_ylabel('Number of positive instances')
     ax.set_xticks(x + width/2)
-    ax.set_xticklabels(('ground truth', 'fair predictions', 'probabilistic predictions'))
+    ax.set_xticklabels(('ground truth', 'LGFO', 'uncorrected'))
     plt.legend()
-    plt.savefig('figs/'+dataset+'/ground_truth_vs_pred.png')
+    plt.savefig('figs/'+dataset+'/ground_truth_vs_pred.pdf')
 
     # plt.show()
 
@@ -135,7 +135,7 @@ def plot_cost_comparison_curves(met_i, cost_i, met_j, cost_j, thresholds, data_s
     plt.plot(x, y_i, c='green', label=met_i.name)
     plt.plot(x, y_j, c='red', label=met_j.name)
     plt.legend()
-    plt.savefig('figs/'+dataset+'/'+met_i.name+'_versus_'+met_j.name+'_cost.png')
+    plt.savefig('figs/'+dataset+'/'+met_i.name+'_versus_'+met_j.name+'_cost.pdf')
     plt.close()
 
 
@@ -153,12 +153,12 @@ def plot_value_comparison_curves(met_i, val_i, met_j, val_j, thresholds, data_si
     plt.plot(x, y_i, c='green', label=met_i.name)
     plt.plot(x, y_j, c='red', label=met_j.name)
     plt.legend()
-    plt.savefig('figs/'+dataset+'/'+met_i.name+'_versus_'+met_j.name+'_value.png')
+    plt.savefig('figs/'+dataset+'/'+met_i.name+'_versus_'+met_j.name+'_value.pdf')
     plt.close()
 
 
 def value_breakdown_curve(mets, zs, thresholds, best_pair_index, s, cost_sums=False):
-    line_styles = ['-', '--', '-.']*(round(len(mets) / 3)+1)
+    line_styles = ['-', '-', '-', '-.']*(round(len(mets) / 4)+1)
 
     fig, ax1 = plt.subplots()
     x = np.arange(len(thresholds))
@@ -169,7 +169,7 @@ def value_breakdown_curve(mets, zs, thresholds, best_pair_index, s, cost_sums=Fa
         ax1.set_xlabel('Threshold pair index')
         ax1.set_ylabel('Values')
         ax1.set_ylim([0, 1.01])
-        # plt.axvline(x=best_pair_index, linestyle='--', c='black', label='optimal threshold pair')
+        plt.axvline(x=best_pair_index, linestyle='--', c='black', label='optimal threshold pair')
         for met_i in mets:
             ax1.plot(x, zs[met_i.value], label=met_i.name, linestyle=line_styles[met_i.value])
 
@@ -180,7 +180,7 @@ def value_breakdown_curve(mets, zs, thresholds, best_pair_index, s, cost_sums=Fa
         c = 'red'
         ax1.plot(x, cost_sums, label='SUM', c=c)
         ax1.tick_params(axis='y', labelcolor=c)
-        # plt.axvline(x=best_pair_index, linestyle='--', c='black', label='optimal threshold pair')
+        plt.axvline(x=best_pair_index, linestyle='--', c='black', label='optimal threshold pair')
 
         ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
         ax2.set_ylabel('Values')
@@ -191,13 +191,13 @@ def value_breakdown_curve(mets, zs, thresholds, best_pair_index, s, cost_sums=Fa
 
     plt.legend()
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig('figs/'+dataset+'/Metric_values_at_each_threshold_pair_' + s+'.png')
+    plt.savefig('figs/'+dataset+'/Metric_values_at_each_threshold_pair_' + s+'.pdf')
     plt.close()
 
 
 def cost_breakdown_curve(mets, switch_costs, thresholds, best_pair_index, s, cost_sums=False):
 
-    line_styles = ['-', '--', '-.']*(round(len(mets) / 3)+1)
+    line_styles = ['-', '-', '-', '--']*(round(len(mets) / 4)+1)
 
     fig, ax1 = plt.subplots()
     ax1.set_title('Metric costs at each threshold pair')
@@ -226,7 +226,7 @@ def cost_breakdown_curve(mets, switch_costs, thresholds, best_pair_index, s, cos
 
     plt.legend()
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig('figs/'+dataset+'/Metric_costs_at_each_threshold_pair_' + s+'.png')
+    plt.savefig('figs/'+dataset+'/Metric_costs_at_each_threshold_pair_' + s+'.pdf')
     plt.close()
 
 
@@ -251,7 +251,7 @@ def compare_metrics(met_i, met_j, Z, zs, thresholds, predictions, min_ts, PROTEC
     plot_value_comparison_curves(met_i, zs[met_i.value], met_j, zs[met_j.value], thresholds, len(predictions), s)
     sum_costs = np.add(np.asarray(switch_costs_i), np.asarray(switch_costs_j))
     cost_curves(met_i.name + " summed with "+met_j.name,
-                thresholds[sum_costs.argmin()], thresholds, sum_costs, len(predictions)*2, s)
+                thresholds[sum_costs.argmin()], thresholds, sum_costs, len(predictions), s)
     print(met_i.name+" at summed minimum is "+str(zs[met_i.value][sum_costs.argmin()]))
     print(met_j.name+" at summed minimum is "+str(zs[met_j.value][sum_costs.argmin()]))
 
@@ -268,7 +268,7 @@ def metric_fulfillment_curves(metric, min_ts, thresholds, metric_values, s):
     y = np.asarray(metric_values)
     plt.plot(x, y, label=metric.name)
     plt.legend()
-    plt.savefig('figs/'+dataset+'/'+metric.name+'_values.png')
+    plt.savefig('figs/'+dataset+'/'+metric.name+'_values.pdf')
     plt.close()
 
 
@@ -294,7 +294,7 @@ def cost_curves(metric_name, min_ts, thresholds, cost, data_size, s, recids=-1):
         # cbar = plt.colorbar(p)
     else:
         plt.plot(x, y)
-    plt.savefig('figs/'+dataset+'/'+metric_name+'_cost_curve_'+s+'.png')
+    plt.savefig('figs/'+dataset+'/'+metric_name+'_cost_curve_'+s+'.pdf')
     plt.close()
 
 
@@ -314,7 +314,7 @@ def thin_graphs(thresholds, zs, s):
     p = ax.scatter(np.asarray(xs), np.asarray(ys), c=zs, s=6, marker='s')
     cbar = fig.colorbar(p)
     cbar.set_label('positive classifications')
-    plt.savefig('figs/'+dataset+'/best_threshold_pairs.png')
+    plt.savefig('figs/'+dataset+'/best_threshold_pairs.pdf')
     plt.close()
 
 
@@ -334,7 +334,7 @@ def metric_fulfillment_graphs(thresholds, zs, metric, s):
     p = ax.scatter(np.asarray(xs), np.asarray(ys), c=zs, s=6, marker='s')
     cbar = fig.colorbar(p)
     cbar.set_label(str(metric.name))
-    plt.savefig('figs/'+dataset+'/'+str(metric.name)+'_metric_fulfillment.png')
+    plt.savefig('figs/'+dataset+'/'+str(metric.name)+'_metric_fulfillment.pdf')
     plt.close()
 
 
@@ -359,7 +359,7 @@ def switch_sum_2D_graphs(thresholds, zs, s):
         s = 'THIN'
     else:
         s = ''
-    plt.savefig('figs/'+dataset+'/summed_cost_of_switch'+s+'.png')
+    plt.savefig('figs/'+dataset+'/summed_cost_of_switch'+s+'.pdf')
     plt.close()
 
 
@@ -380,5 +380,5 @@ def cost_of_switch_2D_graphs(metric, min_ts, thresholds, zs, s, thin=True):
     cbar = fig.colorbar(p)
     cbar.set_label('cost')
 
-    plt.savefig('figs/'+dataset+'/'+metric.name+'_'+'cost_of_switch'+'.png')
+    plt.savefig('figs/'+dataset+'/'+metric.name+'_'+'cost_of_switch'+'.pdf')
     plt.close()

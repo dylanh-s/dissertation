@@ -24,10 +24,10 @@ from matplotlib import cm
 
 class Metrics(enum.Enum):
     SP = 0
-    dTPR = 1
-    dFPR = 2
-    pSUFF = 3
-    nSUFF = 4
+    # dTPR = 1
+    dF = 1
+    Suff = 2
+    # nSUFF = 4
     # INAC = 5
 
 
@@ -40,10 +40,9 @@ dataset = 'compas'
 
 use_train_data_in_post = True
 
-P2N = 1.0
-N2P = 0.0
+P2N = 0.3
+N2P = 1.0
 precision = 100
-
 
 s = ''
 if (P2N < N2P):
@@ -224,11 +223,10 @@ else:
 graphing.set_dataset(dataset)
 pprint(Z.shape)
 BASE = get_base_rate(Z, Y)
-
 # generate best thresholds for target
 thresholds, recids_li = get_best_pairs(
     Z, np.asarray(predictions),
-    BASE * len(predictions),
+    BASE*len(predictions),
     PROTECTED_COL, precision=precision)
 
 graphing.prediction_hist(Z, PROTECTED_COL, predictions, s)
@@ -236,6 +234,17 @@ graphing.thin_graphs(thresholds, recids_li, s)
 
 # generate list of all possible thresholds
 all_thresholds = get_all_pairs(precision=precision)
+
+print("------------------------")
+t_prime = [0.5, 0.5]
+SP, _, dFPR, Suff, _ = fairness_metrics.speedy_metrics(
+    Z, np.asarray(predictions), Y, PROTECTED_COL, t_prime)
+INAC = fairness_metrics.get_inaccuracy(Z, np.asarray(predictions), Y, PROTECTED_COL, t_prime)
+print("SP: ", SP)
+print("dFPR: ", dFPR)
+print("Suff: ", Suff)
+print("ACC: ", 1-INAC)
+print("------------------------")
 
 min = []
 min_ts = []
@@ -251,9 +260,11 @@ count = 0
 for ts in thresholds:
     currents = [0]*len(Metrics)
 
-    currents[Metrics.SP.value], currents[Metrics.dTPR.value], currents[Metrics.dFPR.value], currents[Metrics.pSUFF.
-                                                                                                     value], currents[Metrics.nSUFF.value] = fairness_metrics.speedy_metrics(Z, np.asarray(predictions),
-                                                                                                                                                                             Y, PROTECTED_COL, ts)
+    # currents[Metrics.SP.value] = fairness_metrics.get_statistical_parity(Z, np.asarray(predictions), Y, PROTECTED_COL, ts)
+    # _, currents[Metrics.dFPR.value] = fairness_metrics.get_equalised_odds(Z, np.asarray(predictions), Y, PROTECTED_COL, ts)
+    # currents[Metrics.Suff.value] = fairness_metrics.sufficiency(Z, np.asarray(predictions), Y, PROTECTED_COL, ts)
+    currents[Metrics.SP.value], _, currents[Metrics.dF.value], currents[Metrics.Suff.value], _ = fairness_metrics.speedy_metrics(
+        Z, np.asarray(predictions), Y, PROTECTED_COL, ts)
     # currents[Metrics.INAC.value] = fairness_metrics.get_inaccuracy(Z, np.asarray(predictions), Y, PROTECTED_COL, ts)
 
     for met in Metrics:
@@ -309,7 +320,11 @@ fairest_outcomes = fairness_metrics.probability_to_outcome(
 probabilistic_outcomes = fairness_metrics.probability_to_outcome(
     Z, np.asarray(predictions), PROTECTED_COL, [0.5, 0.5])
 
+INAC = fairness_metrics.get_inaccuracy(Z, np.asarray(predictions), Y, PROTECTED_COL, thresholds[min_index])
+print("ACC = ", 1-INAC)
 print("positive instances here = ", np.sum(fairest_outcomes))
+graphing.compare_metrics(Metrics.Suff, Metrics.dF, Z, zs, thresholds,
+                         predictions, min_ts, PROTECTED_COL, N2P, P2N, s)
 graphing.outcome_hists(Z, Y, fairest_outcomes, probabilistic_outcomes, PROTECTED_COL, s)
 graphing.prediction_hist(Z, PROTECTED_COL, predictions, thresholds[min_index])
 graphing.ungrouped_prediction_hist(Z, PROTECTED_COL, predictions, thresholds[min_index], s)
